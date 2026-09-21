@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">peopleCounterSaya</string>
+    <string name="lblTotal">Total</string>
+    <string name="lblButtonL">Laki - Laki</string>
+    <string name="lblButtonP">Perempuan</string>
+    <string name="lblButtonReset">Reset</string>
+</resources>

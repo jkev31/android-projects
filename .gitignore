@@ -1,0 +1,11 @@
+# Ignore Gradle & Build folders di semua subfolder
+**/.gradle/
+**/build/
+**/captures/
+
+# Ignore IDE Settings
+**/.idea/
+**/*.iml
+
+# Ignore Local Configurations
+**/local.properties

@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">listView2</string>
+    <string name="lbl_nama_produk" />
+    <string name="lbl_add_to_btn" />
+</resources>
