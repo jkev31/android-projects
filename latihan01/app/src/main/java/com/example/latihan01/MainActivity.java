@@ -78,6 +78,12 @@ public class MainActivity extends AppCompatActivity  {
             int harga = Integer.parseInt(etHarga.getText().toString());
 
 
+
+            if (kode.trim().isEmpty()) {
+                Toast.makeText(MainActivity.this, "Kode harus diisi", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             if (harga <= 0) {
                 Toast.makeText(MainActivity.this, "Harga tidak boleh 0", Toast.LENGTH_SHORT).show();
                 return;
