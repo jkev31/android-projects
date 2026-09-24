@@ -23,6 +23,12 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class LoginActivity extends AppCompatActivity {
     EditText etEmail, etPassword;
@@ -133,9 +139,25 @@ public class LoginActivity extends AppCompatActivity {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        Toast.makeText(LoginActivity.this, "Login Google Berhasil", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                        finish();
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        if (user != null) {
+                            // Dapatkan reference ke node users/{UID}
+                            String databaseUrl = "https://latihan01-70d0f-default-rtdb.asia-southeast1.firebasedatabase.app/";
+                            DatabaseReference userRef = FirebaseDatabase.getInstance(databaseUrl)
+                                    .getReference("users").child(user.getUid());
+
+                            Map<String, Object> profileData = new HashMap<>();
+                            profileData.put("email", user.getEmail());
+                            profileData.put("createdAt", ServerValue.TIMESTAMP);
+
+                            // Simpan/update data profil ke Realtime Database terlebih dahulu
+                            userRef.child("profile").updateChildren(profileData)
+                                    .addOnCompleteListener(dbTask -> {
+                                        Toast.makeText(LoginActivity.this, "Login Google Berhasil", Toast.LENGTH_SHORT).show();
+                                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                                        finish();
+                                    });
+                        }
                     } else {
                         Toast.makeText(LoginActivity.this, "Autentikasi Firebase Gagal: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }

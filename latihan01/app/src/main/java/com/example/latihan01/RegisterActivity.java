@@ -8,6 +8,12 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class RegisterActivity extends AppCompatActivity {
     private EditText etEmail, etPassword;
@@ -24,6 +30,8 @@ public class RegisterActivity extends AppCompatActivity {
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         btnRegister = findViewById(R.id.btnRegister);
+
+
 
         btnRegister.setOnClickListener(v -> {
             String email = etEmail.getText().toString().trim();
@@ -43,6 +51,23 @@ public class RegisterActivity extends AppCompatActivity {
             mAuth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
+
+
+                            if (mAuth.getCurrentUser() != null) {
+                                String uid = mAuth.getCurrentUser().getUid();
+
+                                String databaseUrl = "https://latihan01-70d0f-default-rtdb.asia-southeast1.firebasedatabase.app/";
+                                DatabaseReference userRef = FirebaseDatabase.getInstance(databaseUrl)
+                                        .getReference("users").child(uid);
+
+                                Map<String, Object> profileData = new HashMap<>();
+                                profileData.put("email", email);
+                                profileData.put("createdAt", ServerValue.TIMESTAMP);
+
+                                userRef.child("profile").setValue(profileData);
+                            }
+
+
                             Toast.makeText(RegisterActivity.this, "Registrasi Berhasil! Silakan Login", Toast.LENGTH_LONG).show();
                             // Tutup RegisterActivity dan kembali ke LoginActivity
                             finish();
