@@ -2,6 +2,7 @@ package com.example.latihan01;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,6 +20,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
@@ -30,7 +33,11 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity  {
 
+    FirebaseAuth mAuth;
+
     DatabaseReference dbRef;
+
+    Button btnLogout;
 
     EditText etKode, etNama, etSatuan, etHarga;
 
@@ -53,10 +60,28 @@ public class MainActivity extends AppCompatActivity  {
             return insets;
         });
 
+
+
         FirebaseApp.initializeApp(this);
         String databaseUrl = "https://latihan01-70d0f-default-rtdb.asia-southeast1.firebasedatabase.app/";
         FirebaseDatabase database = FirebaseDatabase.getInstance(databaseUrl);
         DatabaseReference dbRef =database.getReference().child("items");
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser user = mAuth.getCurrentUser();
+
+        if (user == null) {
+            startActivity(new Intent(MainActivity.this, LoginActivity.class));
+            finish();
+            return;
+        }
+
+        btnLogout = findViewById(R.id.btnLogout);
+        btnLogout.setOnClickListener(v -> {
+            mAuth.signOut(); // keluar dari akun
+            startActivity(new Intent(MainActivity.this, LoginActivity.class));
+            finish();
+        });
 
 
         etKode = findViewById(R.id.etKode) ;
@@ -65,8 +90,10 @@ public class MainActivity extends AppCompatActivity  {
         etSatuan = findViewById(R.id.etSatuan) ;
         etHarga = findViewById(R.id.etHarga) ;
         btnSave = findViewById(R.id.btnSave) ;
-
         recyclerView = findViewById(R.id. recyclerView) ;
+
+
+
         adapter = new ItemAdapter(itemList,dbRef);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
