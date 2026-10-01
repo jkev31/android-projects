@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Latihan01">
         <activity
-            android:name=".LoginActivity"
+            android:name="com.example.latihan02.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,11 +22,11 @@
         </activity>
 
         <activity
-            android:name=".RegisterActivity"
+            android:name="com.example.latihan02.RegisterActivity"
             android:exported="false" />
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.example.latihan02.MainActivity"
             android:exported="false" />
 
 

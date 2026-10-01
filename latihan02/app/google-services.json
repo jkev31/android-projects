@@ -12,7 +12,20 @@
           "package_name": "com.example.latihan02"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "780123776866-hfuvc361p67fcj72ou87s6tv5lasuvut.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.latihan02",
+            "certificate_hash": "fc459205669978eb1a0384355beccd9b47253268"
+          }
+        },
+        {
+          "client_id": "780123776866-nqdoc311rupcq1o9div3jm6hbg3nhpd9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCINpHaDhGCUKC3nnSbmgifaw0vNXz5iCA"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "780123776866-nqdoc311rupcq1o9div3jm6hbg3nhpd9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
