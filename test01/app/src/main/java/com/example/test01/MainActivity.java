@@ -25,7 +25,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     FirebaseFirestore db;
-    static CollectionReference itemsRef;
+    CollectionReference itemsRef;
 
     Button btnSave;
     EditText etKode, etNama, etAlamat, etTelp, etUmur, etPendidikan;

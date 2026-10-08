@@ -18,7 +18,7 @@ import java.util.List;
 
 public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder> {
     private List<Item> itemList;
-
+    CollectionReference itemsRef;
 
 
     /*
@@ -29,6 +29,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
 
     public ItemAdapter(List<Item> itemList, CollectionReference itemsRef) {
         this.itemList = itemList;
+        this.itemsRef = itemsRef;
     }
 
     @NonNull
@@ -83,7 +84,13 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
 
 
                         //Memperbarui dokumen item di Firestore
-                        MainActivity.itemsRef.document(item.getKode()).set(item)
+                        itemsRef.document(item.getKode()).update(
+                                        "nama", item.getNama(),
+                                        "alamat", item.getAlamat(),
+                                        "telp", item.getTelp(),
+                                        "umur", item.getUmur(),
+                                        "pendidikan", item.getPendidikan()
+                                )
                                 .addOnSuccessListener(aVoid ->
                                         Toast.makeText(context, "Item diupdate", Toast.LENGTH_SHORT).show()
                                 )
@@ -102,7 +109,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                     .setMessage("Yakin ingin menghapus item ini?")
                     .setPositiveButton("Ya", (dialog, which) -> {
                         // Menghapus dokumen item dari Firestore
-                        MainActivity.itemsRef.document(item.getKode()).delete()
+                        itemsRef.document(item.getKode()).delete()
                                 .addOnSuccessListener(aVoid ->
                                         Toast.makeText(v.getContext(), "Item dihapus", Toast.LENGTH_SHORT).show()
                                 )

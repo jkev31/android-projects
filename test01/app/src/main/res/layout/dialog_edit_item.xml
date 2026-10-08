@@ -14,25 +14,26 @@
 
     <EditText
         android:id="@+id/etEditAlamat"
-        android:hint="Nama"
+        android:hint="Alamat"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
     <EditText
         android:id="@+id/etEditTelp"
-        android:hint="Nama"
+        android:hint="Telp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
     <EditText
         android:id="@+id/etEditUmur"
-        android:hint="Nama"
+        android:hint="Umur"
+        android:inputType="number"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
     <EditText
         android:id="@+id/etEditPendidikan"
-        android:hint="Nama"
+        android:hint="Pendidikan"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
