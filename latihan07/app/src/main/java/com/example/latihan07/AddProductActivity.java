@@ -60,6 +60,25 @@ public class AddProductActivity extends AppCompatActivity {
         double price = Double.parseDouble(priceStr);
         long stock = Long.parseLong(stockStr);
 
+        try {
+            price = Double.parseDouble(priceStr);
+            stock = Long.parseLong(stockStr);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Format harga atau stok tidak valid!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Validasi Tugas Mandiri 2: Harga dan stok tidak boleh <= 0
+        if (price <= 0) {
+            Toast.makeText(this, "Harga tidak boleh 0 atau bertanda minus!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (stock <= 0) {
+            Toast.makeText(this, "Stok tidak boleh 0 atau bertanda minus!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         // [DIUBAH] Melewatkan Context (this) ke ViewModel
         viewModel.addProduct(AddProductActivity.this, name, price, stock, selectedImageUri, new ProductRepository.TransactionCallback() {
             @Override

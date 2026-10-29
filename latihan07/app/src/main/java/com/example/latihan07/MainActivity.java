@@ -29,6 +29,16 @@ public class MainActivity extends AppCompatActivity {
         binding.fabAddProduct.setOnClickListener(v ->
                 startActivity(new Intent(MainActivity.this, AddProductActivity.class))
         );
+
+        binding.toolbar.inflateMenu(R.menu.main_menu);
+
+        binding.toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_history) {
+                startActivity(new Intent(MainActivity.this, HistoryActivity.class));
+                return true;
+            }
+            return false;
+        });
     }
 
     private void setupRecyclerView() {

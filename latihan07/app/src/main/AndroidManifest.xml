@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -23,6 +24,7 @@
 
         <activity android:name=".MainActivity" />
         <activity android:name=".AddProductActivity" />
+        <activity android:name=".HistoryActivity" />
 
         <service
             android:name=".MyFirebaseMessagingService"
