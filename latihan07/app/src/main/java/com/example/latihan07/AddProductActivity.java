@@ -10,6 +10,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+
 import com.example.latihan07.databinding.ActivityAddProductBinding;
 
 public class AddProductActivity extends AppCompatActivity {
@@ -59,7 +60,8 @@ public class AddProductActivity extends AppCompatActivity {
         double price = Double.parseDouble(priceStr);
         long stock = Long.parseLong(stockStr);
 
-        viewModel.addProduct(name, price, stock, selectedImageUri, new ProductRepository.TransactionCallback() {
+        // [DIUBAH] Melewatkan Context (this) ke ViewModel
+        viewModel.addProduct(AddProductActivity.this, name, price, stock, selectedImageUri, new ProductRepository.TransactionCallback() {
             @Override
             public void onSuccess(String message) {
                 Toast.makeText(AddProductActivity.this, message, Toast.LENGTH_SHORT).show();

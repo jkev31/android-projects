@@ -1,5 +1,6 @@
 package com.example.latihan07;
 
+import android.content.Context;
 import android.net.Uri;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
@@ -24,7 +25,7 @@ public class ProductViewModel extends ViewModel {
         repository.buyProduct(productId, quantity, callback);
     }
 
-    public void addProduct(String name, double price, long stock, Uri imageUri, ProductRepository.TransactionCallback callback) {
-        repository.addProductWithImage(name, price, stock, imageUri, callback);
+    public void addProduct(Context context, String name, double price, long stock, Uri imageUri, ProductRepository.TransactionCallback callback) {
+        repository.addProductWithBase64(context, name, price, stock, imageUri, callback);
     }
 }
