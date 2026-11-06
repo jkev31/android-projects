@@ -1,83 +1,73 @@
 package com.example.latihan03;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
+import android.util.Base64;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
-import com.bumptech.glide.Glide;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageMetadata;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.UUID;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "LatihanCloudStorage";
 
-    // Deklarasi variabel untuk elemen UI
     private ImageView ivPreview;
-    private ProgressBar progressBar;
-    private TextView tvProgress, tvInfo;
-    private Button btnSelectFile, btnUpload, btnGetMetadata, btnDelete;
+    private Button btnSelectFile, btnSave, btnDelete;
+    private TextView tvInfo;
 
-    // Deklarasi variabel untuk Firebase Storage
-    private FirebaseStorage storage;
-    private StorageReference storageRef; //storageRef = root folder
-    private StorageReference uploadedFileRef; //uploadedFileRef = menyimpan referensi image
+    private Uri selectedImageUri;
+    private ActivityResultLauncher<Intent> galleryLauncher;
 
-    private Uri selectedImageUri; //menyimpan address local dari gambar yang dipilih
-    private ActivityResultLauncher<Intent> galleryLauncher; //menangani callback hasil pemilihan gambar dari aplikasi galeri secara asynchronous
+    private FirebaseFirestore db;
+    private DocumentReference docRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // inisialisasi Firebase Storage
-        storage = FirebaseStorage.getInstance();
-        storageRef = storage.getReference();
+        // 1. Inisialisasi Firebase & Firestore
+        FirebaseApp.initializeApp(this);
+        db = FirebaseFirestore.getInstance();
 
-        // inisialisasi elemen UI
+        // Dokumen target untuk menyimpan string Base64 gambar
+        docRef = db.collection("latihan03_images").document("data_gambar");
+
+        // 2. Inisialisasi UI
         ivPreview = findViewById(R.id.ivPreview);
-        progressBar = findViewById(R.id.progressBar);
-        tvProgress = findViewById(R.id.tvProgress);
-        tvInfo = findViewById(R.id.tvInfo);
         btnSelectFile = findViewById(R.id.btnSelectFile);
-        btnUpload = findViewById(R.id.btnUpload);
-        btnGetMetadata = findViewById(R.id.btnGetMetadata);
+        btnSave = findViewById(R.id.btnSave);
         btnDelete = findViewById(R.id.btnDelete);
+        tvInfo = findViewById(R.id.tvInfo);
 
-        // inisialisasi launcher untuk memilih gambar dari galeri
+        // 3. Register ActivityResultLauncher Galeri
         setupGalleryLauncher();
 
-        // event listener button
+        // 4. Event Listener
         btnSelectFile.setOnClickListener(v -> openGallery());
-        btnUpload.setOnClickListener(v -> uploadFileToStorage());
-        btnGetMetadata.setOnClickListener(v -> fetchFileMetadata());
-        btnDelete.setOnClickListener(v -> deleteFileFromStorage());
+        btnSave.setOnClickListener(v -> simpanBase64KeFirestore());
+        btnDelete.setOnClickListener(v -> hapusGambarDariFirestore());
+
+        // 5. Read Realtime Listener Firestore
+        listenRealtimeFirestore();
     }
 
-
-
-    //Alur method ini:
-    //pengguna pilih gambar -> result OK -> method mengambil Uri ->
-    // ditampilkan sbg preview pada ivPreview -> mengaktifkan btnUpload -> update teks pada tvInfo
     private void setupGalleryLauncher() {
         galleryLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -85,9 +75,8 @@ public class MainActivity extends AppCompatActivity {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                         selectedImageUri = result.getData().getData();
                         if (selectedImageUri != null) {
-                            // Tampilkan preview lokal
                             ivPreview.setImageURI(selectedImageUri);
-                            btnUpload.setEnabled(true);
+                            btnSave.setEnabled(true);
                             tvInfo.setText("Berkas dipilih: " + selectedImageUri.getLastPathSegment());
                         }
                     }
@@ -95,132 +84,107 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
-
-    //Alur method ini:
-    //membuat intent dengan aksi action_pick dan tipenya image/
-    //dilaunch menggunakan galleryLauncher.launch(intent)
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType("image/*");
         galleryLauncher.launch(intent);
     }
 
+    // ENCODE: Convert Uri Gambar ke String Base64
+    private String convertUriToBase64(Uri uri) {
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+            if (inputStream != null) inputStream.close();
 
+            if (bitmap == null) return null;
 
-    //Alur method ini:
-    //menampilkan ProgressBar & tvProgress ke screen -> generate nama file unik berbasis UUID dalam subfolder image/
-    //menyisipkan custom metadata berisi "uploaded_by" dengan nilai "Android User"
-    //memulai upload dengan method UploadTask uploadTask = uploadedFileRef.putFile(selectedImageUri, metadata)
-    //menghitung persentase progres realtime dengan addOnProgressListener
-    //jika upload berhasil, panggil fetchDownloadUrl() untuk mendapatkan URL download
-    private void uploadFileToStorage() {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            // Kompresi ke format JPEG 70% agar ukuran String < 1 MB (Batas Firestore)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, byteArrayOutputStream);
+            byte[] byteArray = byteArrayOutputStream.toByteArray();
+
+            return Base64.encodeToString(byteArray, Base64.DEFAULT);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // DECODE: Convert String Base64 ke Bitmap
+    private Bitmap base64ToBitmap(String base64String) {
+        if (base64String == null || base64String.isEmpty()) return null;
+        try {
+            byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
+            return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void simpanBase64KeFirestore() {
         if (selectedImageUri == null) return;
 
-        // Tampilkan Progress Bar
-        progressBar.setVisibility(View.VISIBLE);
-        tvProgress.setVisibility(View.VISIBLE);
-        btnUpload.setEnabled(false);
+        btnSave.setEnabled(false);
+        tvInfo.setText("Mengonversi gambar ke Base64...");
 
-        // Buat nama berkas unik dalam folder "images/"
-        String fileName = "images/" + UUID.randomUUID().toString() + ".jpg";
-        uploadedFileRef = storageRef.child(fileName);
+        String base64Image = convertUriToBase64(selectedImageUri);
+        if (base64Image == null) {
+            Toast.makeText(this, "Gagal mengonversi gambar!", Toast.LENGTH_SHORT).show();
+            btnSave.setEnabled(true);
+            return;
+        }
 
-        // Buat Metadata Tambahan
-        StorageMetadata metadata = new StorageMetadata.Builder()
-                .setContentType("image/jpeg")
-                .setCustomMetadata("uploaded_by", "Android User")
-                .build();
+        Map<String, Object> data = new HashMap<>();
+        data.put("imageBase64", base64Image);
+        data.put("updatedAt", FieldValue.serverTimestamp());
 
-        // Mulai Upload File
-        UploadTask uploadTask = uploadedFileRef.putFile(selectedImageUri, metadata);
+        docRef.set(data)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(MainActivity.this, "Berhasil disimpan ke Firestore!", Toast.LENGTH_SHORT).show();
+                    tvInfo.setText("Data gambar berhasil disimpan dalam bentuk Base64 ke Cloud Firestore.");
+                })
+                .addOnFailureListener(e -> {
+                    btnSave.setEnabled(true);
+                    Toast.makeText(MainActivity.this, "Gagal simpan: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
 
-        // Pantau Progres Upload
-        uploadTask.addOnProgressListener(snapshot -> {
-            double progress = (100.0 * snapshot.getBytesTransferred()) / snapshot.getTotalByteCount();
-            int currentProgress = (int) progress;
-            progressBar.setProgress(currentProgress);
-            tvProgress.setText("Progress: " + currentProgress + "%");
-        }).addOnSuccessListener(taskSnapshot -> {
-            // Upload Sukses
-            progressBar.setVisibility(View.GONE);
-            tvProgress.setVisibility(View.GONE);
-            Toast.makeText(MainActivity.this, "Unggah Berhasil!", Toast.LENGTH_SHORT).show();
+    private void listenRealtimeFirestore() {
+        docRef.addSnapshotListener((snapshot, error) -> {
+            if (error != null) {
+                tvInfo.setText("Error membaca data: " + error.getMessage());
+                return;
+            }
 
-            // Ambil Download URL
-            fetchDownloadUrl();
+            if (snapshot != null && snapshot.exists()) {
+                String base64String = snapshot.getString("imageBase64");
+                Bitmap bitmap = base64ToBitmap(base64String);
 
-            // Aktifkan tombol metadata dan delete
-            btnGetMetadata.setEnabled(true);
-            btnDelete.setEnabled(true);
-        }).addOnFailureListener(e -> {
-            // Upload Gagal
-            progressBar.setVisibility(View.GONE);
-            tvProgress.setVisibility(View.GONE);
-            btnUpload.setEnabled(true);
-            Log.e(TAG, "Gagal mengunggah berkas", e);
-            Toast.makeText(MainActivity.this, "Gagal Unggah: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                if (bitmap != null) {
+                    ivPreview.setImageBitmap(bitmap);
+                    btnDelete.setEnabled(true);
+                    tvInfo.setText("Status: Data gambar aktif dimuat dari Firestore (Panjang Base64: " + base64String.length() + " karakter)");
+                }
+            } else {
+                ivPreview.setImageResource(0);
+                btnDelete.setEnabled(false);
+                tvInfo.setText("Belum ada data gambar di Firestore.");
+            }
         });
     }
 
-
-
-
-    //Alur method ini:
-    //memanggil download URL -> menampilkan URL address ke tvInfo -> memuat gambar ke ImageView menggunakan Glide
-    private void fetchDownloadUrl() {
-        if (uploadedFileRef == null) return;
-
-        uploadedFileRef.getDownloadUrl().addOnSuccessListener(uri -> {
-            String downloadUrl = uri.toString();
-            tvInfo.setText("Download URL:\n" + downloadUrl);
-
-            // Tampilkan gambar dari Cloud Storage menggunakan Glide
-            Glide.with(MainActivity.this)
-                    .load(downloadUrl)
-                    .centerCrop()
-                    .into(ivPreview);
-        }).addOnFailureListener(e -> Log.e(TAG, "Gagal mendapatkan URL download", e));
-    }
-
-
-
-
-    //Alur method ini:
-    //memanggil metadata -> mengambil properti berkas -> menampilkan informasi berkas ke tvInfo
-    private void fetchFileMetadata() {
-        if (uploadedFileRef == null) return;
-
-        uploadedFileRef.getMetadata().addOnSuccessListener(metadata -> {
-            String info = "=== METADATA BERKAS ===" +
-                    "\nNama File: " + metadata.getName() +
-                    "\nUkuran: " + (metadata.getSizeBytes() / 1024) + " KB" +
-                    "\nType: " + metadata.getContentType() +
-                    "\nDibuat: " + metadata.getCreationTimeMillis() +
-                    "\nUploader: " + metadata.getCustomMetadata("uploaded_by");
-            tvInfo.setText(info);
-        }).addOnFailureListener(e -> Toast.makeText(this, "Gagal membaca metadata", Toast.LENGTH_SHORT).show());
-    }
-
-
-
-    //Alur method ini:
-    //memanggil fungsi delete -> jika berhasil, menampilkan pesan sukses -> reset UI State
-    private void deleteFileFromStorage() {
-        if (uploadedFileRef == null) return;
-
-        uploadedFileRef.delete().addOnSuccessListener(aVoid -> {
-            Toast.makeText(MainActivity.this, "Berkas di Cloud Storage terhapus!", Toast.LENGTH_SHORT).show();
-
-            // Reset UI State
-            ivPreview.setImageResource(0);
-            tvInfo.setText("Berkas telah dihapus dari cloud.");
-            btnGetMetadata.setEnabled(false);
-            btnDelete.setEnabled(false);
-            uploadedFileRef = null;
-            selectedImageUri = null;
-        }).addOnFailureListener(e -> {
-            Log.e(TAG, "Gagal menghapus berkas", e);
-            Toast.makeText(MainActivity.this, "Gagal menghapus berkas: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        });
+    private void hapusGambarDariFirestore() {
+        docRef.delete()
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(MainActivity.this, "Data gambar berhasil dihapus!", Toast.LENGTH_SHORT).show();
+                    selectedImageUri = null;
+                    btnSave.setEnabled(false);
+                    btnDelete.setEnabled(false);
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(MainActivity.this, "Gagal hapus: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
     }
 }
