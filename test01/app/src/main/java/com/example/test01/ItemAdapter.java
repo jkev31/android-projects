@@ -12,24 +12,23 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.firestore.CollectionReference;
+// import com.google.firebase.firestore.CollectionReference;
 
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder> {
     private List<Item> itemList;
-    CollectionReference itemsRef;
+    // CollectionReference itemsRef;
+    private ApiServices apiServices;
 
 
-    /*
-    * 1. item() ?
-    * 2. CollectionReference -> mainactivity
-    * */
-
-
-    public ItemAdapter(List<Item> itemList, CollectionReference itemsRef) {
+    public ItemAdapter(List<Item> itemList, ApiServices apiServices) {
         this.itemList = itemList;
-        this.itemsRef = itemsRef;
+        this.apiServices = apiServices;
     }
 
     @NonNull
@@ -49,9 +48,6 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
         holder.text4.setText("Umur: " + String.valueOf(item.getUmur()));
         holder.text5.setText(item.getPendidikan());
         holder.text6.setText(item.getAlamat());
-
-
-
 
         // Klik untuk Edit
         holder.itemView.setOnClickListener(v -> {
@@ -76,27 +72,38 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                     .setTitle("Edit Item")
                     .setView(dialogView)
                     .setPositiveButton("Simpan", (dialog, which) -> {
-                        item.setNama(etEditNama.getText().toString());
-                        item.setAlamat(etEditAlamat.getText().toString());
-                        item.setTelp(etEditTelp.getText().toString());
-                        item.setUmur(Integer.parseInt(etEditUmur.getText().toString()));
-                        item.setPendidikan(etEditPendidikan.getText().toString());
+                        String nama = etEditNama.getText().toString();
+                        String alamat = etEditAlamat.getText().toString();
+                        String telp = etEditTelp.getText().toString();
+                        int umur = Integer.parseInt(etEditUmur.getText().toString());
+                        String pendidikan = etEditPendidikan.getText().toString();
 
+                        // Alur Retrofit untuk Update
+                        apiServices.updateKaryawan(item.getKode(), nama, alamat, telp, umur, pendidikan).enqueue(new Callback<Item>() {
+                            @Override
+                            public void onResponse(Call<Item> call, Response<Item> response) {
+                                if (response.isSuccessful()) {
+                                    item.setNama(nama);
+                                    item.setAlamat(alamat);
+                                    item.setTelp(telp);
+                                    item.setUmur(umur);
+                                    item.setPendidikan(pendidikan);
+                                    notifyItemChanged(holder.getAdapterPosition());
+                                    Toast.makeText(context, "Item diupdate", Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(context, "Gagal update: " + response.message(), Toast.LENGTH_SHORT).show();
+                                }
+                            }
 
-                        //Memperbarui dokumen item di Firestore
-                        itemsRef.document(item.getKode()).update(
-                                        "nama", item.getNama(),
-                                        "alamat", item.getAlamat(),
-                                        "telp", item.getTelp(),
-                                        "umur", item.getUmur(),
-                                        "pendidikan", item.getPendidikan()
-                                )
-                                .addOnSuccessListener(aVoid ->
-                                        Toast.makeText(context, "Item diupdate", Toast.LENGTH_SHORT).show()
-                                )
-                                .addOnFailureListener(e ->
-                                        Toast.makeText(context, "Gagal update: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                                );
+                            @Override
+                            public void onFailure(Call<Item> call, Throwable t) {
+                                Toast.makeText(context, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+
+                        /*
+                        itemsRef.document(item.getKode()).update(...)
+                        */
                     })
                     .setNegativeButton("Batal", null)
                     .show();
@@ -108,14 +115,29 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                     .setTitle("Konfirmasi Hapus")
                     .setMessage("Yakin ingin menghapus item ini?")
                     .setPositiveButton("Ya", (dialog, which) -> {
-                        // Menghapus dokumen item dari Firestore
+                        // Alur Retrofit untuk Delete
+                        apiServices.deleteKaryawan(item.getKode()).enqueue(new Callback<Void>() {
+                            @Override
+                            public void onResponse(Call<Void> call, Response<Void> response) {
+                                if (response.isSuccessful()) {
+                                    int currentPosition = holder.getAdapterPosition();
+                                    itemList.remove(currentPosition);
+                                    notifyItemRemoved(currentPosition);
+                                    Toast.makeText(v.getContext(), "Item dihapus", Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(v.getContext(), "Gagal hapus: " + response.message(), Toast.LENGTH_SHORT).show();
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<Void> call, Throwable t) {
+                                Toast.makeText(v.getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+
+                        /*
                         itemsRef.document(item.getKode()).delete()
-                                .addOnSuccessListener(aVoid ->
-                                        Toast.makeText(v.getContext(), "Item dihapus", Toast.LENGTH_SHORT).show()
-                                )
-                                .addOnFailureListener(e ->
-                                        Toast.makeText(v.getContext(), "Gagal hapus: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                                );
+                        */
                     })
                     .setNegativeButton("Batal", null)
                     .show();

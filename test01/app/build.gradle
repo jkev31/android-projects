@@ -1,15 +1,11 @@
 plugins {
     alias(libs.plugins.android.application)
-    id 'com.google.gms.google-services'
+    //id 'com.google.gms.google-services'
 }
 
 android {
     namespace 'com.example.test01'
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.example.test01"
@@ -34,9 +30,11 @@ android {
 }
 
 dependencies {
-    implementation platform('com.google.firebase:firebase-bom:34.19.0')
-    implementation 'com.google.firebase:firebase-analytics'
-    implementation("com.google.firebase:firebase-firestore")
+//    implementation platform('com.google.firebase:firebase-bom:34.19.0')
+//    implementation 'com.google.firebase:firebase-analytics'
+//    implementation("com.google.firebase:firebase-firestore")
+    implementation 'com.squareup.retrofit2:retrofit:2.11.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity

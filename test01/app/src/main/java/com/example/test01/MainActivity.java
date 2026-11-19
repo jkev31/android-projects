@@ -13,19 +13,25 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.FirebaseApp;
+/*import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestore;*/
 
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class MainActivity extends AppCompatActivity {
 
-    FirebaseFirestore db;
-    CollectionReference itemsRef;
+    ApiServices apiServices = ApiClient.getApiServices();
+
+    // FirebaseFirestore db;
+    // CollectionReference itemsRef;
 
     Button btnSave;
     EditText etKode, etNama, etAlamat, etTelp, etUmur, etPendidikan;
@@ -48,11 +54,9 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        FirebaseApp.initializeApp(this);
-
-        db = FirebaseFirestore.getInstance();
-
-        itemsRef = db.collection("items");
+        // FirebaseApp.initializeApp(this);
+        // db = FirebaseFirestore.getInstance();
+        // itemsRef = db.collection("items");
 
         etKode = findViewById(R.id.etKode);
         etNama = findViewById(R.id.etNama);
@@ -63,9 +67,11 @@ public class MainActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btnSave);
         recyclerView = findViewById(R.id.recyclerView);
 
-        adapter = new ItemAdapter(itemList, itemsRef);
+        adapter = new ItemAdapter(itemList, apiServices); // Ganti itemsRef dengan apiServices
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
+
+        loadData(); // Panggil fungsi muat data
 
         btnSave.setOnClickListener(v -> {
             String kode = etKode.getText().toString().trim();
@@ -91,10 +97,11 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            Item item = new Item(kode, nama, alamat, telp, umur, pendidikan);
-
-            itemsRef.document(kode).set(item)
-                    .addOnSuccessListener(aVoid -> {
+            // Alur Retrofit untuk Create
+            apiServices.createKaryawan(kode, nama, alamat, telp, umur, pendidikan).enqueue(new Callback<Item>() {
+                @Override
+                public void onResponse(Call<Item> call, Response<Item> response) {
+                    if (response.isSuccessful()) {
                         Toast.makeText(MainActivity.this, "Item berhasil ditambahkan", Toast.LENGTH_SHORT).show();
                         etKode.setText("");
                         etNama.setText("");
@@ -102,32 +109,52 @@ public class MainActivity extends AppCompatActivity {
                         etTelp.setText("");
                         etUmur.setText("");
                         etPendidikan.setText("");
+                        loadData(); // Refresh list
+                    } else {
+                        Toast.makeText(MainActivity.this, "Gagal: " + response.message(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Item> call, Throwable t) {
+                    Toast.makeText(MainActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            /* 
+            Item item = new Item(kode, nama, alamat, telp, umur, pendidikan);
+            itemsRef.document(kode).set(item)
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(MainActivity.this, "Item berhasil ditambahkan", Toast.LENGTH_SHORT).show();
+                        ...
                     })
                     .addOnFailureListener(e ->
                             Toast.makeText(MainActivity.this, "Gagal: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                     );
+            */
         });
 
+        /*
         itemsRef.addSnapshotListener((snapshot, error) -> {
-            if (error != null) {
-                android.util.Log.e("DEBUG_FIRESTORE", "Error Firestore: " + error.getMessage());
-                Toast.makeText(MainActivity.this, "Gagal muat data: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                return;
+            ...
+        });
+        */
+    }
+
+    private void loadData() {
+        apiServices.getAllKaryawan().enqueue(new Callback<List<Item>>() {
+            @Override
+            public void onResponse(Call<List<Item>> call, Response<List<Item>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    itemList.clear();
+                    itemList.addAll(response.body());
+                    adapter.notifyDataSetChanged();
+                }
             }
 
-            if (snapshot != null) {
-                itemList.clear();
-                android.util.Log.d("DEBUG_FIRESTORE", "Jumlah dokumen ditemukan: " + snapshot.size());
-                for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                    Item item = doc.toObject(Item.class); // Konversi dokumen ke objek Item, perlu public item() {} di class Item
-                    if (item != null) {
-                        android.util.Log.d("DEBUG_FIRESTORE", "Berhasil muat item: " + item.getNama());
-                        itemList.add(item);
-                    } else {
-                        android.util.Log.e("DEBUG_FIRESTORE", "Gagal konversi dokumen ID: " + doc.getId());
-                    }
-                }
-                adapter.notifyDataSetChanged();
+            @Override
+            public void onFailure(Call<List<Item>> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "Error API: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
