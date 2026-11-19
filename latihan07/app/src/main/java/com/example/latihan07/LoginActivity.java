@@ -7,11 +7,18 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.latihan07.databinding.ActivityLoginBinding;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class LoginActivity extends AppCompatActivity {
 
     private ActivityLoginBinding binding;
     private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,6 +27,7 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
         if (mAuth.getCurrentUser() != null) {
             navigateToMain();
@@ -42,19 +50,33 @@ public class LoginActivity extends AppCompatActivity {
 
         if (isLogin) {
             mAuth.signInWithEmailAndPassword(email, password)
-                    .addOnSuccessListener(authResult -> navigateToMain())
+                    .addOnSuccessListener(authResult -> createOrUpdateUserDoc(email))
                     .addOnFailureListener(e -> {
                         binding.progressBar.setVisibility(View.GONE);
                         Toast.makeText(this, "Login gagal: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     });
         } else {
             mAuth.createUserWithEmailAndPassword(email, password)
-                    .addOnSuccessListener(authResult -> navigateToMain())
+                    .addOnSuccessListener(authResult -> createOrUpdateUserDoc(email))
                     .addOnFailureListener(e -> {
                         binding.progressBar.setVisibility(View.GONE);
                         Toast.makeText(this, "Registrasi gagal: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     });
         }
+    }
+
+    // Membuat / memperbarui dokumen /users/{uid} di Firestore
+    private void createOrUpdateUserDoc(String email) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("email", email);
+
+        db.collection("users").document(user.getUid())
+                .set(userData, SetOptions.merge())
+                .addOnSuccessListener(aVoid -> navigateToMain())
+                .addOnFailureListener(e -> navigateToMain());
     }
 
     private void navigateToMain() {

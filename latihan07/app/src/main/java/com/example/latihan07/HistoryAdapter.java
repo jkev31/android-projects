@@ -32,13 +32,13 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
         Order order = orderList.get(position);
         holder.binding.tvOrderId.setText("Order ID: " + order.getId());
         holder.binding.tvProductId.setText("Product ID: " + order.getProductId());
-        holder.binding.tvQuantity.setText("Jumlah Item: " + order.getQuantity());
+        holder.binding.tvQuantity.setText("Jumlah: " + order.getQuantity());
 
         if (order.getTimestamp() != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault());
-            holder.binding.tvTimestamp.setText("Waktu Transaksi: " + sdf.format(order.getTimestamp()));
+            holder.binding.tvTimestamp.setText("Waktu: " + sdf.format(order.getTimestamp()));
         } else {
-            holder.binding.tvTimestamp.setText("Waktu Transaksi: Memproses...");
+            holder.binding.tvTimestamp.setText("Waktu: Memproses...");
         }
     }
 

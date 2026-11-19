@@ -7,10 +7,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.latihan07.databinding.ActivityHistoryBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class HistoryActivity extends AppCompatActivity {
@@ -46,10 +46,9 @@ public class HistoryActivity extends AppCompatActivity {
             return;
         }
 
-        // Filter riwayat pesanan milik user yang sedang aktif
+        // Query Firestore (tanpa .orderBy() agar tidak memicu error FAILED_PRECONDITION)
         db.collection("orders")
                 .whereEqualTo("userId", currentUserId)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (error != null) {
                         Toast.makeText(HistoryActivity.this, "Gagal memuat riwayat: " + error.getMessage(), Toast.LENGTH_SHORT).show();
@@ -63,6 +62,13 @@ public class HistoryActivity extends AppCompatActivity {
                             order.setId(doc.getId());
                             orders.add(order);
                         }
+
+                        // Mengurutkan riwayat secara lokal di Java (terbaru di atas)
+                        Collections.sort(orders, (o1, o2) -> {
+                            if (o1.getTimestamp() == null || o2.getTimestamp() == null) return 0;
+                            return o2.getTimestamp().compareTo(o1.getTimestamp());
+                        });
+
                         adapter.setOrderList(orders);
                     }
                 });
