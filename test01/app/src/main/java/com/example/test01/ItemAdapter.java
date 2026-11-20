@@ -12,8 +12,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-// import com.google.firebase.firestore.CollectionReference;
-
 import java.util.List;
 
 import retrofit2.Call;
@@ -22,9 +20,7 @@ import retrofit2.Response;
 
 public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder> {
     private List<Item> itemList;
-    // CollectionReference itemsRef;
     private ApiServices apiServices;
-
 
     public ItemAdapter(List<Item> itemList, ApiServices apiServices) {
         this.itemList = itemList;
@@ -42,7 +38,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
         Item item = itemList.get(position);
-        holder.text1.setText(item.getKode());
+        holder.text1.setText("ID: " + item.getId());
         holder.text2.setText(item.getNama());
         holder.text3.setText(item.getTelp());
         holder.text4.setText("Umur: " + String.valueOf(item.getUmur()));
@@ -78,8 +74,8 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                         int umur = Integer.parseInt(etEditUmur.getText().toString());
                         String pendidikan = etEditPendidikan.getText().toString();
 
-                        // Alur Retrofit untuk Update
-                        apiServices.updateKaryawan(item.getKode(), nama, alamat, telp, umur, pendidikan).enqueue(new Callback<Item>() {
+                        // Alur Retrofit untuk Update (memakai id dari database)
+                        apiServices.updateKaryawan(item.getId(), nama, alamat, telp, umur, pendidikan).enqueue(new Callback<Item>() {
                             @Override
                             public void onResponse(Call<Item> call, Response<Item> response) {
                                 if (response.isSuccessful()) {
@@ -91,7 +87,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                                     notifyItemChanged(holder.getAdapterPosition());
                                     Toast.makeText(context, "Item diupdate", Toast.LENGTH_SHORT).show();
                                 } else {
-                                    Toast.makeText(context, "Gagal update: " + response.message(), Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(context, "Gagal update: " + response.code(), Toast.LENGTH_SHORT).show();
                                 }
                             }
 
@@ -100,10 +96,6 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                                 Toast.makeText(context, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                             }
                         });
-
-                        /*
-                        itemsRef.document(item.getKode()).update(...)
-                        */
                     })
                     .setNegativeButton("Batal", null)
                     .show();
@@ -115,8 +107,8 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                     .setTitle("Konfirmasi Hapus")
                     .setMessage("Yakin ingin menghapus item ini?")
                     .setPositiveButton("Ya", (dialog, which) -> {
-                        // Alur Retrofit untuk Delete
-                        apiServices.deleteKaryawan(item.getKode()).enqueue(new Callback<Void>() {
+                        // Alur Retrofit untuk Delete (memakai id dari database)
+                        apiServices.deleteKaryawan(item.getId()).enqueue(new Callback<Void>() {
                             @Override
                             public void onResponse(Call<Void> call, Response<Void> response) {
                                 if (response.isSuccessful()) {
@@ -125,7 +117,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                                     notifyItemRemoved(currentPosition);
                                     Toast.makeText(v.getContext(), "Item dihapus", Toast.LENGTH_SHORT).show();
                                 } else {
-                                    Toast.makeText(v.getContext(), "Gagal hapus: " + response.message(), Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(v.getContext(), "Gagal hapus: " + response.code(), Toast.LENGTH_SHORT).show();
                                 }
                             }
 
@@ -134,10 +126,6 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                                 Toast.makeText(v.getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                             }
                         });
-
-                        /*
-                        itemsRef.document(item.getKode()).delete()
-                        */
                     })
                     .setNegativeButton("Batal", null)
                     .show();

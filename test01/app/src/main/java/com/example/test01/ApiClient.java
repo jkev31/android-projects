@@ -5,9 +5,9 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
 
-    // Gunakan 10.0.2.2 jika memakai Emulator Android Studio
-    // Ganti dengan IP Wi-Fi laptop (misal: http://192.168.1.10:8000/api/) jika memakai HP fisik
-    private static final String BASE_URL = "http://172.16.36.204:8000/api/";
+    // Ganti x dengan angka terakhir IP Wi-Fi laptop (cek lewat ipconfig).
+    // Emulator Android Studio, pakai http://10.0.2.2:8000/api/
+    private static final String BASE_URL = "http://192.168.101.4:8000/api/";
     private static Retrofit retrofit = null;
 
     public static ApiServices getApiServices() {

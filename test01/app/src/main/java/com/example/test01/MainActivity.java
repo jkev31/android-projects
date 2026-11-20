@@ -13,12 +13,6 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-/*import com.google.firebase.FirebaseApp;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;*/
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,17 +24,13 @@ public class MainActivity extends AppCompatActivity {
 
     ApiServices apiServices = ApiClient.getApiServices();
 
-    // FirebaseFirestore db;
-    // CollectionReference itemsRef;
-
     Button btnSave;
-    EditText etKode, etNama, etAlamat, etTelp, etUmur, etPendidikan;
+    EditText etNama, etAlamat, etTelp, etUmur, etPendidikan;
 
     RecyclerView recyclerView;
 
     List<Item> itemList = new ArrayList<>();
     ItemAdapter adapter;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,11 +44,6 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // FirebaseApp.initializeApp(this);
-        // db = FirebaseFirestore.getInstance();
-        // itemsRef = db.collection("items");
-
-        etKode = findViewById(R.id.etKode);
         etNama = findViewById(R.id.etNama);
         etAlamat = findViewById(R.id.etAlamat);
         etTelp = findViewById(R.id.etTelp);
@@ -67,22 +52,21 @@ public class MainActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btnSave);
         recyclerView = findViewById(R.id.recyclerView);
 
-        adapter = new ItemAdapter(itemList, apiServices); // Ganti itemsRef dengan apiServices
+        adapter = new ItemAdapter(itemList, apiServices);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
         loadData(); // Panggil fungsi muat data
 
         btnSave.setOnClickListener(v -> {
-            String kode = etKode.getText().toString().trim();
             String nama = etNama.getText().toString().trim();
             String alamat = etAlamat.getText().toString().trim();
             String telp = etTelp.getText().toString().trim();
             String strUmur = etUmur.getText().toString().trim();
             String pendidikan = etPendidikan.getText().toString().trim();
 
-            if (kode.isEmpty()) {
-                Toast.makeText(MainActivity.this, "Kode harus diisi", Toast.LENGTH_SHORT).show();
+            if (nama.isEmpty() || telp.isEmpty()) {
+                Toast.makeText(MainActivity.this, "Nama dan telp harus diisi", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -91,19 +75,18 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            int umur = Integer.parseInt(strUmur.trim());
+            int umur = Integer.parseInt(strUmur);
             if (umur <= 0) {
                 Toast.makeText(MainActivity.this, "Umur tidak boleh 0", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Alur Retrofit untuk Create
-            apiServices.createKaryawan(kode, nama, alamat, telp, umur, pendidikan).enqueue(new Callback<Item>() {
+            // Alur Retrofit untuk Create (id dibuat otomatis oleh Laravel)
+            apiServices.createKaryawan(nama, alamat, telp, umur, pendidikan).enqueue(new Callback<Item>() {
                 @Override
                 public void onResponse(Call<Item> call, Response<Item> response) {
                     if (response.isSuccessful()) {
                         Toast.makeText(MainActivity.this, "Item berhasil ditambahkan", Toast.LENGTH_SHORT).show();
-                        etKode.setText("");
                         etNama.setText("");
                         etAlamat.setText("");
                         etTelp.setText("");
@@ -111,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
                         etPendidikan.setText("");
                         loadData(); // Refresh list
                     } else {
-                        Toast.makeText(MainActivity.this, "Gagal: " + response.message(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "Gagal: " + response.code(), Toast.LENGTH_SHORT).show();
                     }
                 }
 
@@ -120,40 +103,28 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
-
-            /* 
-            Item item = new Item(kode, nama, alamat, telp, umur, pendidikan);
-            itemsRef.document(kode).set(item)
-                    .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(MainActivity.this, "Item berhasil ditambahkan", Toast.LENGTH_SHORT).show();
-                        ...
-                    })
-                    .addOnFailureListener(e ->
-                            Toast.makeText(MainActivity.this, "Gagal: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                    );
-            */
         });
-
-        /*
-        itemsRef.addSnapshotListener((snapshot, error) -> {
-            ...
-        });
-        */
     }
 
     private void loadData() {
-        apiServices.getAllKaryawan().enqueue(new Callback<List<Item>>() {
+        apiServices.getAllKaryawan().enqueue(new Callback<KaryawanResponse>() {
             @Override
-            public void onResponse(Call<List<Item>> call, Response<List<Item>> response) {
+            public void onResponse(Call<KaryawanResponse> call, Response<KaryawanResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    itemList.clear();
-                    itemList.addAll(response.body());
-                    adapter.notifyDataSetChanged();
+                    // Data karyawan ada di dalam objek pembungkus "data"
+                    List<Item> dataDariApi = response.body().getData();
+                    if (dataDariApi != null) {
+                        itemList.clear();
+                        itemList.addAll(dataDariApi);
+                        adapter.notifyDataSetChanged();
+                    }
+                } else {
+                    Toast.makeText(MainActivity.this, "Gagal ambil data: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<List<Item>> call, Throwable t) {
+            public void onFailure(Call<KaryawanResponse> call, Throwable t) {
                 Toast.makeText(MainActivity.this, "Error API: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });

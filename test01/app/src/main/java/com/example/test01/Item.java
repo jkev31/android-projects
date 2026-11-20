@@ -1,19 +1,17 @@
 package com.example.test01;
 
 public class Item {
-    private String kode;
+    private int id;
     private String nama;
     private String alamat;
-
     private String telp;
-
     private int umur;
     private String pendidikan;
 
-    public Item() {} // Diperlukan oleh Firebase
+    public Item() {} // Diperlukan oleh Gson
 
-    public Item(String kode, String nama, String alamat, String telp, int umur, String pendidikan) {
-        this.kode = kode;
+    public Item(int id, String nama, String alamat, String telp, int umur, String pendidikan) {
+        this.id = id;
         this.nama = nama;
         this.alamat = alamat;
         this.telp = telp;
@@ -21,12 +19,12 @@ public class Item {
         this.pendidikan = pendidikan;
     }
 
-    public String getKode() {
-        return kode;
+    public int getId() {
+        return id;
     }
 
-    public void setKode(String kode) {
-        this.kode = kode;
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getNama() {
@@ -65,8 +63,7 @@ public class Item {
         return pendidikan;
     }
 
-    public void setPendidikan(String pendidikan) {this.pendidikan = pendidikan;
+    public void setPendidikan(String pendidikan) {
+        this.pendidikan = pendidikan;
     }
-
-
 }
